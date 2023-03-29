@@ -1,9 +1,19 @@
 package main
 
-import "log"
+import (
+	"log"
+	"time"
+
+	"github.com/go-playground/validator"
+	"gitlab.com/learn-micorservices/user-service/config"
+)
 
 func controller() {
-	log.Println("test")
+	time.Local = time.UTC
+	db := config.NewDB
+	validate := validator.New()
+
+	// userRepository :
 }
 
 func main() {
