@@ -1,11 +1,11 @@
 package helper
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"strconv"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	// "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 )
 
 func ProduceKafka(data interface{}, action, kafkaTopik string) {
-	broker := fmt.Sprintf("%s:%s", )
+	// broker := fmt.Sprintf("%s:%s", )
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.server": broker})
+	// p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.server": broker})
 }

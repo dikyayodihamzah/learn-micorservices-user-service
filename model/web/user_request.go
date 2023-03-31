@@ -14,7 +14,7 @@ type UpdateUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
-	RoleId   string `json:"role_id"`
+	RoleID   string `json:"role_id"`
 }
 
 type UpdatePasswordRequest struct {

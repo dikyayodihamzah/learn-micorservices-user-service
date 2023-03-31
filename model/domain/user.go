@@ -3,6 +3,7 @@ package domain
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,7 +19,11 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (user *User) GeneratePassword(password string) {
+func (user *User) GenerateID() {
+	user.ID = uuid.New().String()
+}
+
+func (user *User) SetPassword(password string) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), 16)
 	user.Password = string(hashedPassword)
 }

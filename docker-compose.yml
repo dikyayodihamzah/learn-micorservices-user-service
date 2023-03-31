@@ -5,9 +5,9 @@ services:
     container_name: learn-microservices-postgres
     image: postgres:latest
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-      PGDATA: /data/postgres
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      # - PGDATA: /data/postgres
     volumes:
       - learn-microservices-postgres:/data/postgres
     ports:
