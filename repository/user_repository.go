@@ -82,17 +82,9 @@ func (repository *userRepository) GetAllUser(c context.Context) ([]domain.User, 
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := `SELECT 
-		id,
-		name,
-		username,
-		email,
-		password,
-		phone,
-		role,
-		created_at,
-		updated_at
-		FROM users`
+	query := `SELECT users.*, roles.name,
+		FROM users
+		LEFT JOIN roles ON roles.id = users.role_id`
 
 	user, err := db.Query(ctx, query)
 	if err != nil {
@@ -117,18 +109,10 @@ func (repository *userRepository) GetUserByID(c context.Context, userID string) 
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := `SELECT 
-		id,
-		name,
-		username,
-		email,
-		password,
-		phone,
-		role,
-		created_at,
-		updated_at
+	query := `SELECT users.*, roles.name,
 		FROM users
-		WHERE id = $1`
+		LEFT JOIN roles ON roles.id = users.role_id
+		WHERE users.id = $1`
 
 	user, err := db.Query(ctx, query, userID)
 	if err != nil {
