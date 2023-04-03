@@ -48,7 +48,7 @@ func (repository *userRepository) CreateUser(c context.Context, user domain.User
 		email,
 		password,
 		phone,
-		role,
+		role_id,
 		created_at,
 		updated_at
 	)
@@ -65,7 +65,7 @@ func (repository *userRepository) CreateUser(c context.Context, user domain.User
 		user.Email,
 		user.Password,
 		user.Phone,
-		user.Role,
+		user.Role.ID,
 		user.CreatedAt,
 		user.UpdatedAt); err != nil {
 		return exception.ErrUnprocessableEntity(err.Error())
@@ -82,7 +82,7 @@ func (repository *userRepository) GetAllUser(c context.Context) ([]domain.User, 
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := `SELECT users.*, roles.name,
+	query := `SELECT users.*, roles.name
 		FROM users
 		LEFT JOIN roles ON roles.id = users.role_id`
 
@@ -109,7 +109,7 @@ func (repository *userRepository) GetUserByID(c context.Context, userID string) 
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := `SELECT users.*, roles.name,
+	query := `SELECT users.*, roles.name
 		FROM users
 		LEFT JOIN roles ON roles.id = users.role_id
 		WHERE users.id = $1`
@@ -195,7 +195,7 @@ func (repository *userRepository) UpdateUserPassword(c context.Context, user dom
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := "UPDATE users SET password = $1 WHERE nik = $2"
+	query := "UPDATE users SET password = $1 WHERE id = $2"
 
 	if _, err := db.Prepare(c, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())

@@ -11,9 +11,9 @@ import (
 func IsAuthenticated(ctx *fiber.Ctx) error {
 	cookie := ctx.Cookies("token")
 
-	if cookie == "" {
-		return fiber.NewError(fiber.StatusUnauthorized)
-	}
+	// if cookie == "" {
+	// 	return fiber.NewError(fiber.StatusUnauthorized)
+	// }
 
 	claims, err := helper.ParseJWT(cookie)
 	if err != nil {
@@ -25,7 +25,7 @@ func IsAuthenticated(ctx *fiber.Ctx) error {
 			})
 		}
 
-		return fiber.NewError(fiber.StatusUnauthorized)
+		// return fiber.NewError(fiber.StatusUnauthorized)
 	}
 
 	ctx.Locals("claims", claims)

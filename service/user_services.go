@@ -40,11 +40,37 @@ func (service *userService) CreateUser(c context.Context, claims helper.JWTClaim
 		return web.UserResponse{}, exception.ErrBadRequest(err.Error())
 	}
 
+	if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" {
+		exception.ErrBadRequest("email already registered")
+	}
+
+	if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" {
+		exception.ErrBadRequest("username already registered")
+	}
+
+	if request.Phone != "" {
+		if !helper.IsNumeric(request.Phone) {
+			panic(exception.ErrBadRequest("Phone should numeric"))
+		}
+
+		if len([]rune(request.Phone)) < 10 || len([]rune(request.Phone)) > 13 {
+			panic(exception.ErrBadRequest("Phone should 10-13 digit"))
+		}
+
+		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); userByPhone.ID != "" {
+			exception.ErrBadRequest("phone already registered")
+		}
+	}
+
+	if role := service.RoleRepository.GetRoleByID(c, request.RoleID); role.ID == "" {
+		exception.ErrBadRequest("role not found")
+	}
+
 	user := domain.User{
 		Name:     request.Name,
 		Username: request.Username,
 		Email:    request.Email,
-		Phone:    request.Phone,
+		Password: request.Password,
 		Role: domain.Role{
 			ID: request.RoleID,
 		},
@@ -101,24 +127,29 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 	}
 
 	if request.Email != "" {
-		if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); 
-		userByEmail.ID != "" && userByEmail.ID != claims.User.Id {
+		if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" && userByEmail.ID != claims.User.Id {
 			exception.ErrBadRequest("email already registered")
 		}
 		user.Email = request.Email
 	}
 
 	if request.Username != "" {
-		if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); 
-		userByUsername.ID != "" && userByUsername.ID != claims.User.Id {
+		if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" && userByUsername.ID != claims.User.Id {
 			exception.ErrBadRequest("username already registered")
 		}
 		user.Username = request.Username
 	}
 
 	if request.Phone != "" {
-		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); 
-		userByPhone.ID != "" && userByPhone.ID != claims.User.Id {
+		if !helper.IsNumeric(request.Phone) {
+			panic(exception.ErrBadRequest("Phone should numeric"))
+		}
+
+		if len([]rune(request.Phone)) < 10 || len([]rune(request.Phone)) > 13 {
+			panic(exception.ErrBadRequest("Phone should 10-13 digit"))
+		}
+
+		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); userByPhone.ID != "" && userByPhone.ID != claims.User.Id {
 			exception.ErrBadRequest("phone already registered")
 		}
 		user.Phone = request.Phone
@@ -128,7 +159,7 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 		if role := service.RoleRepository.GetRoleByID(c, request.RoleID); role.ID == "" {
 			exception.ErrBadRequest("role not found")
 		}
-		user.Email = request.Email
+		user.Role.ID = request.RoleID
 	}
 
 	user.UpdatedAt = time.Now()
@@ -143,7 +174,7 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 	return helper.ToUserResponse(user), nil
 }
 
-func (service *userService) UpdateUserPassword(c context.Context, claims helper.JWTClaims, request web.UpdatePasswordRequest) (web.UserResponse, error) {	
+func (service *userService) UpdateUserPassword(c context.Context, claims helper.JWTClaims, request web.UpdatePasswordRequest) (web.UserResponse, error) {
 	if err := service.Validate.Struct(request); err != nil {
 		return web.UserResponse{}, exception.ErrBadRequest(err.Error())
 	}
@@ -158,9 +189,9 @@ func (service *userService) UpdateUserPassword(c context.Context, claims helper.
 	}
 
 	user.SetPassword(request.Password)
-	
+
 	user.UpdatedAt = time.Now()
-	
+
 	if err := service.UserRepository.UpdateUserPassword(c, user); err != nil {
 		return web.UserResponse{}, err
 	}

@@ -5,9 +5,9 @@ import (
 	"gitlab.com/learn-micorservices/user-service/config"
 	"gitlab.com/learn-micorservices/user-service/exception"
 	"gitlab.com/learn-micorservices/user-service/helper"
-	"gitlab.com/learn-micorservices/user-service/middleware"
 	"gitlab.com/learn-micorservices/user-service/model/web"
 	"gitlab.com/learn-micorservices/user-service/service"
+	"gitlab.com/learn-micorservices/user-service/middleware"
 )
 
 type UserController interface {
@@ -49,6 +49,7 @@ func (controller *userController) CreateUser(ctx *fiber.Ctx) error {
 	request := new(web.CreateUserRequest)
 	err := ctx.BodyParser(&request)
 	helper.FatalIfError(err)
+
 
 	userResponse, err := controller.UserService.CreateUser(ctx.Context(), claims, *request)
 	if err != nil {
