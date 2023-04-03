@@ -5,13 +5,13 @@ services:
     container_name: learn-microservices-postgres
     image: postgres:latest
     environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
-      # - PGDATA: /data/postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      PGDATA: /data/postgres
     volumes:
       - learn-microservices-postgres:/data/postgres
     ports:
-      - '5432:5432'
+      - '5433:5433'
 
   zookeeper:
     container_name: learn-microservices-zookeeper

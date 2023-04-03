@@ -22,7 +22,8 @@ func controllers() {
 	validate := validator.New()
 
 	userRepository := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepository, validate)
+	roleRepository := repository.NewRoleRepository(db)
+	userService := service.NewUserService(userRepository, roleRepository, validate)
 	userController := controller.NewUserController(userService)
 
 	app := fiber.New()

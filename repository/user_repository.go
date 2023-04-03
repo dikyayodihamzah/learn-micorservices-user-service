@@ -18,6 +18,7 @@ type UserRepository interface {
 	CreateUser(c context.Context, user domain.User) error
 	GetAllUser(c context.Context) ([]domain.User, error)
 	GetUserByID(c context.Context, userID string) (domain.User, error)
+	GetUsersByQuery(c context.Context, params string, value string) (domain.User, error)
 	UpdateUser(c context.Context, user domain.User) error
 	UpdateUserPassword(c context.Context, user domain.User) error
 	DeleteUser(c context.Context, user_id string) error
@@ -151,6 +152,23 @@ func (repository *userRepository) GetUserByID(c context.Context, userID string) 
 	return data, nil
 }
 
+func (repository *userRepository) GetUsersByQuery(c context.Context, params string, value string) (domain.User, error) {
+	ctx, cancel := context.WithTimeout(c, 10*time.Second)
+	defer cancel()
+
+	db := repository.Database(dbName)
+	defer db.Close(ctx)
+
+	query := fmt.Sprintf("SELECT * FROM users WHERE %s = $1", params)
+
+	user := db.QueryRow(ctx, query, value)
+
+	var data domain.User
+	user.Scan(&data.ID, &data.Name, &data.Username, &data.Email, &data.Password, &data.Phone, &data.Role, &data.CreatedAt, &data.UpdatedAt)
+
+	return data, nil
+}
+
 func (repository *userRepository) UpdateUser(c context.Context, user domain.User) error {
 	ctx, cancel := context.WithTimeout(c, 10*time.Second)
 	defer cancel()
@@ -168,7 +186,7 @@ func (repository *userRepository) UpdateUser(c context.Context, user domain.User
 		updated_at = $7
 		WHERE id = $8`
 
-	if _, err := db.Prepare(context.Background(), "data", query); err != nil {
+	if _, err := db.Prepare(c, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
@@ -195,11 +213,11 @@ func (repository *userRepository) UpdateUserPassword(c context.Context, user dom
 
 	query := "UPDATE users SET password = $1 WHERE nik = $2"
 
-	if _, err := db.Prepare(context.Background(), "data", query); err != nil {
+	if _, err := db.Prepare(c, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
-	if _, err := db.Exec(context.Background(), "data", user.Password, user.ID); err != nil {
+	if _, err := db.Exec(c, "data", user.Password, user.ID); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
@@ -215,11 +233,11 @@ func (repository *userRepository) DeleteUser(c context.Context, user_id string) 
 
 	query := `DELETE FROM users WHERE id = $1`
 
-	if _, err := db.Prepare(context.Background(), "data", query); err != nil {
+	if _, err := db.Prepare(c, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
-	if _, err := db.Exec(context.Background(), "data", user_id); err != nil {
+	if _, err := db.Exec(c, "data", user_id); err != nil {
 		return exception.ErrUnprocessableEntity(err.Error())
 	}
 

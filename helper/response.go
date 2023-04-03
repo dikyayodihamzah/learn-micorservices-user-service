@@ -21,3 +21,11 @@ func ToUserResponse(user domain.User) web.UserResponse {
 		UpdatedAt: user.UpdatedAt,
 	}
 }
+
+func ToAllUserResponses(users []domain.User) []web.UserResponse {
+	var userResponses []web.UserResponse
+	for _, user := range users {
+		userResponses = append(userResponses, ToUserResponse(user))
+	}
+	return userResponses
+}
