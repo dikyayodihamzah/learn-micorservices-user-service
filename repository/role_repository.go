@@ -29,7 +29,7 @@ func (repository *roleRepository) GetRoleByID(c context.Context, role_id string)
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := `SELECT * FROM roles WHERE id = $1"`
+	query := `SELECT * FROM roles WHERE id = $1`
 
 	roles := db.QueryRow(ctx, query, role_id)
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/go-playground/validator"
@@ -13,12 +14,11 @@ import (
 )
 
 type UserService interface {
-	CreateUser(c context.Context, claims helper.JWTClaims, request web.CreateUserRequest) (web.UserResponse, error)
+	CreateUser(c context.Context, request web.CreateUserRequest) (web.UserResponse, error)
 	GetAllUser(c context.Context) ([]web.UserResponse, error)
-	GetUserByID(c context.Context, claims helper.JWTClaims) (web.UserResponse, error)
-	UpdateUser(c context.Context, claims helper.JWTClaims, request web.UpdateUserRequest) (web.UserResponse, error)
-	UpdateUserPassword(c context.Context, claims helper.JWTClaims, request web.UpdatePasswordRequest) (web.UserResponse, error)
-	DeleteUser(c context.Context, claims helper.JWTClaims) error
+	GetUserByID(c context.Context, id string) (web.UserResponse, error)
+	UpdateUser(c context.Context, id string, request web.UpdateUserRequest) (web.UserResponse, error)
+	DeleteUser(c context.Context, id string) error
 }
 
 type userService struct {
@@ -35,45 +35,44 @@ func NewUserService(userRepository repository.UserRepository, roleRepository rep
 	}
 }
 
-func (service *userService) CreateUser(c context.Context, claims helper.JWTClaims, request web.CreateUserRequest) (web.UserResponse, error) {
+func (service *userService) CreateUser(c context.Context, request web.CreateUserRequest) (web.UserResponse, error) {
 	if err := service.Validate.Struct(request); err != nil {
 		return web.UserResponse{}, exception.ErrBadRequest(err.Error())
 	}
 
-	if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" {
-		exception.ErrBadRequest("email already registered")
+	if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" {
+		return web.UserResponse{}, exception.ErrBadRequest("username already registered")
 	}
 
-	if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" {
-		exception.ErrBadRequest("username already registered")
+	if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" {
+		return web.UserResponse{}, exception.ErrBadRequest("email already registered")
 	}
 
 	if request.Phone != "" {
 		if !helper.IsNumeric(request.Phone) {
-			panic(exception.ErrBadRequest("Phone should numeric"))
+			return web.UserResponse{}, exception.ErrBadRequest("Phone should numeric")
 		}
 
 		if len([]rune(request.Phone)) < 10 || len([]rune(request.Phone)) > 13 {
-			panic(exception.ErrBadRequest("Phone should 10-13 digit"))
+			return web.UserResponse{}, exception.ErrBadRequest("Phone should 10-13 digit")
 		}
 
 		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); userByPhone.ID != "" {
-			exception.ErrBadRequest("phone already registered")
+			return web.UserResponse{}, exception.ErrBadRequest("phone already registered")
 		}
 	}
 
 	if role := service.RoleRepository.GetRoleByID(c, request.RoleID); role.ID == "" {
-		exception.ErrBadRequest("role not found")
+		return web.UserResponse{}, exception.ErrBadRequest("role not found")
 	}
 
 	user := domain.User{
-		Name:     request.Name,
-		Username: request.Username,
-		Email:    request.Email,
-		Password: request.Password,
-		Role: domain.Role{
-			ID: request.RoleID,
-		},
+		Name:      request.Name,
+		Username:  request.Username,
+		Email:     request.Email,
+		Password:  request.Password,
+		Phone:     request.Phone,
+		RoleID:    request.RoleID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -86,6 +85,7 @@ func (service *userService) CreateUser(c context.Context, claims helper.JWTClaim
 		return web.UserResponse{}, err
 	}
 
+	log.Println(user.ID)
 	user, err = service.UserRepository.GetUserByID(c, user.ID)
 	if err != nil {
 		return web.UserResponse{}, err
@@ -101,40 +101,42 @@ func (service *userService) GetAllUser(c context.Context) ([]web.UserResponse, e
 	if err != nil {
 		return []web.UserResponse{}, err
 	}
+	// log.Println(users)
 	return helper.ToAllUserResponses(users), nil
+	// return users, nil
 }
 
-func (service *userService) GetUserByID(c context.Context, claims helper.JWTClaims) (web.UserResponse, error) {
-	user, err := service.UserRepository.GetUserByID(c, claims.User.Id)
+func (service *userService) GetUserByID(c context.Context, id string) (web.UserResponse, error) {
+	user, err := service.UserRepository.GetUserByID(c, id)
 	if err != nil {
 		return web.UserResponse{}, err
 	}
 
-	if user.ID == "" {
+	if id == "" {
 		return web.UserResponse{}, exception.ErrNotFound("user not found")
 	}
 	return helper.ToUserResponse(user), nil
 }
 
-func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaims, request web.UpdateUserRequest) (web.UserResponse, error) {
+func (service *userService) UpdateUser(c context.Context, id string, request web.UpdateUserRequest) (web.UserResponse, error) {
 	if err := service.Validate.Struct(request); err != nil {
 		return web.UserResponse{}, exception.ErrBadRequest(err.Error())
 	}
 
-	user, err := service.UserRepository.GetUserByID(c, claims.User.Id)
+	user, err := service.UserRepository.GetUserByID(c, id)
 	if err != nil {
 		return web.UserResponse{}, exception.ErrNotFound(err.Error())
 	}
 
 	if request.Email != "" {
-		if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" && userByEmail.ID != claims.User.Id {
+		if userByEmail, _ := service.UserRepository.GetUsersByQuery(c, "email", request.Email); userByEmail.ID != "" && userByEmail.ID != id {
 			exception.ErrBadRequest("email already registered")
 		}
 		user.Email = request.Email
 	}
 
 	if request.Username != "" {
-		if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" && userByUsername.ID != claims.User.Id {
+		if userByUsername, _ := service.UserRepository.GetUsersByQuery(c, "username", request.Username); userByUsername.ID != "" && userByUsername.ID != id {
 			exception.ErrBadRequest("username already registered")
 		}
 		user.Username = request.Username
@@ -149,7 +151,7 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 			panic(exception.ErrBadRequest("Phone should 10-13 digit"))
 		}
 
-		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); userByPhone.ID != "" && userByPhone.ID != claims.User.Id {
+		if userByPhone, _ := service.UserRepository.GetUsersByQuery(c, "phone", request.Phone); userByPhone.ID != "" && userByPhone.ID != id {
 			exception.ErrBadRequest("phone already registered")
 		}
 		user.Phone = request.Phone
@@ -159,7 +161,7 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 		if role := service.RoleRepository.GetRoleByID(c, request.RoleID); role.ID == "" {
 			exception.ErrBadRequest("role not found")
 		}
-		user.Role.ID = request.RoleID
+		user.RoleID = request.RoleID
 	}
 
 	user.UpdatedAt = time.Now()
@@ -170,44 +172,17 @@ func (service *userService) UpdateUser(c context.Context, claims helper.JWTClaim
 
 	// KAFAK
 
-	user, _ = service.UserRepository.GetUserByID(c, claims.User.Id)
+	user, _ = service.UserRepository.GetUserByID(c, id)
 	return helper.ToUserResponse(user), nil
 }
 
-func (service *userService) UpdateUserPassword(c context.Context, claims helper.JWTClaims, request web.UpdatePasswordRequest) (web.UserResponse, error) {
-	if err := service.Validate.Struct(request); err != nil {
-		return web.UserResponse{}, exception.ErrBadRequest(err.Error())
-	}
-
-	user, err := service.UserRepository.GetUserByID(c, claims.User.Id)
-	if err != nil || user.ID == "" {
-		return web.UserResponse{}, exception.ErrNotFound("user does not exist")
-	}
-
-	if request.Password != request.ConfirmPassword {
-		return web.UserResponse{}, exception.ErrBadRequest("password not match")
-	}
-
-	user.SetPassword(request.Password)
-
-	user.UpdatedAt = time.Now()
-
-	if err := service.UserRepository.UpdateUserPassword(c, user); err != nil {
-		return web.UserResponse{}, err
-	}
-
-	// KAFKA
-
-	return helper.ToUserResponse(user), nil
-}
-
-func (service *userService) DeleteUser(c context.Context, claims helper.JWTClaims) error {
-	user, err := service.UserRepository.GetUserByID(c, claims.User.Id)
+func (service *userService) DeleteUser(c context.Context, id string) error {
+	user, err := service.UserRepository.GetUserByID(c, id)
 	if err != nil || user.ID == "" {
 		return exception.ErrNotFound("user not found")
 	}
 
-	err = service.UserRepository.DeleteUser(c, claims.User.Id)
+	err = service.UserRepository.DeleteUser(c, id)
 	if err != nil {
 		return err
 	}

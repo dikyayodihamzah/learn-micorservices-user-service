@@ -14,8 +14,8 @@ func ToUserResponse(user domain.User) web.UserResponse {
 		Email:    user.Email,
 		Phone:    user.Phone,
 		Role: web.UserRoleResponse{
-			ID:   user.Role.ID,
-			Name: user.Role.Name,
+			ID:   user.RoleID,
+			Name: user.RoleName,
 		},
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,

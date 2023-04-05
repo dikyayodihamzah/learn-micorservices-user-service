@@ -5,9 +5,9 @@ import (
 	"gitlab.com/learn-micorservices/user-service/config"
 	"gitlab.com/learn-micorservices/user-service/exception"
 	"gitlab.com/learn-micorservices/user-service/helper"
+	"gitlab.com/learn-micorservices/user-service/middleware"
 	"gitlab.com/learn-micorservices/user-service/model/web"
 	"gitlab.com/learn-micorservices/user-service/service"
-	"gitlab.com/learn-micorservices/user-service/middleware"
 )
 
 type UserController interface {
@@ -39,19 +39,15 @@ func (controller *userController) NewUserRouter(app *fiber.App) {
 	user.Get("/:id", controller.GetUserbyID)
 	user.Post("/create", controller.CreateUser)
 	user.Put("/:id", controller.UpdateUser)
-	user.Put("/:id", controller.UpdateUserPassword)
 	user.Delete("/:id", controller.DeleteUser)
 }
 
 func (controller *userController) CreateUser(ctx *fiber.Ctx) error {
-	claims := ctx.Locals("claims").(helper.JWTClaims)
-
 	request := new(web.CreateUserRequest)
 	err := ctx.BodyParser(&request)
 	helper.FatalIfError(err)
 
-
-	userResponse, err := controller.UserService.CreateUser(ctx.Context(), claims, *request)
+	userResponse, err := controller.UserService.CreateUser(ctx.Context(), *request)
 	if err != nil {
 		return exception.ErrorHandler(ctx, err)
 	}
@@ -90,9 +86,9 @@ func (controller *userController) GetAllUsers(ctx *fiber.Ctx) error {
 }
 
 func (controller *userController) GetUserbyID(ctx *fiber.Ctx) error {
-	claims := ctx.Locals("claims").(helper.JWTClaims)
+	id := ctx.Params("id")
 
-	user, err := controller.UserService.GetUserByID(ctx.Context(), claims)
+	user, err := controller.UserService.GetUserByID(ctx.Context(), id)
 	if err != nil {
 		return exception.ErrorHandler(ctx, err)
 	}
@@ -106,35 +102,14 @@ func (controller *userController) GetUserbyID(ctx *fiber.Ctx) error {
 }
 
 func (controller *userController) UpdateUser(ctx *fiber.Ctx) error {
-	claims := ctx.Locals("claims").(helper.JWTClaims)
-
 	request := new(web.UpdateUserRequest)
 	if err := ctx.BodyParser(request); err != nil {
 		return exception.ErrorHandler(ctx, err)
 	}
 
-	user, err := controller.UserService.UpdateUser(ctx.Context(), claims, *request)
-	if err != nil {
-		return exception.ErrorHandler(ctx, err)
-	}
+	id := ctx.Params("id")
 
-	return ctx.Status(fiber.StatusOK).JSON(web.WebResponse{
-		Code:    fiber.StatusOK,
-		Status:  true,
-		Message: "success",
-		Data:    user,
-	})
-}
-
-func (controller *userController) UpdateUserPassword(ctx *fiber.Ctx) error {
-	claims := ctx.Locals("claims").(helper.JWTClaims)
-
-	request := new(web.UpdatePasswordRequest)
-	if err := ctx.BodyParser(request); err != nil {
-		return exception.ErrorHandler(ctx, err)
-	}
-
-	user, err := controller.UserService.UpdateUserPassword(ctx.Context(), claims, *request)
+	user, err := controller.UserService.UpdateUser(ctx.Context(), id, *request)
 	if err != nil {
 		return exception.ErrorHandler(ctx, err)
 	}
@@ -148,14 +123,14 @@ func (controller *userController) UpdateUserPassword(ctx *fiber.Ctx) error {
 }
 
 func (controller *userController) DeleteUser(ctx *fiber.Ctx) error {
-	claims := ctx.Locals("claims").(helper.JWTClaims)
+	id := ctx.Params("id")
 
-	if err := controller.UserService.DeleteUser(ctx.Context(), claims); err != nil {
+	if err := controller.UserService.DeleteUser(ctx.Context(), id); err != nil {
 		return exception.ErrorHandler(ctx, err)
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(web.WebResponse{
-		Code:    fiber.StatusCreated,
+		Code:    fiber.StatusOK,
 		Status:  true,
 		Message: "success",
 		Data:    nil,

@@ -2,8 +2,6 @@ package web
 
 import (
 	"time"
-
-	"gitlab.com/learn-micorservices/user-service/model/domain"
 )
 
 type UserRoleResponse struct {
@@ -22,18 +20,18 @@ type UserResponse struct {
 	UpdatedAt time.Time        `json:"updated_at"`
 }
 
-func NewuserResponse(user domain.User) UserResponse {
-	return UserResponse{
-		ID:       user.ID,
-		Name:     user.Name,
-		Username: user.Username,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		Role: UserRoleResponse{
-			ID:   user.Role.ID,
-			Name: user.Role.Name,
-		},
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-}
+// func NewUserResponse(user domain.User) UserResponse {
+// 	return UserResponse{
+// 		ID:       user.ID,
+// 		Name:     user.Name,
+// 		Username: user.Username,
+// 		Email:    user.Email,
+// 		Phone:    user.Phone,
+// 		Role: UserRoleResponse{
+// 			ID:   user.RoleID,
+// 			Name: user.RoleName,
+// 		},
+// 		CreatedAt: user.CreatedAt,
+// 		UpdatedAt: user.UpdatedAt,
+// 	}
+// }

@@ -16,8 +16,3 @@ type UpdateUserRequest struct {
 	Phone    string `json:"phone"`
 	RoleID   string `json:"role_id"`
 }
-
-type UpdatePasswordRequest struct {
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirm_password"`
-}

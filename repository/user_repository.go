@@ -20,7 +20,6 @@ type UserRepository interface {
 	GetUserByID(c context.Context, userID string) (domain.User, error)
 	GetUsersByQuery(c context.Context, params string, value string) (domain.User, error)
 	UpdateUser(c context.Context, user domain.User) error
-	UpdateUserPassword(c context.Context, user domain.User) error
 	DeleteUser(c context.Context, user_id string) error
 }
 
@@ -58,6 +57,7 @@ func (repository *userRepository) CreateUser(c context.Context, user domain.User
 		return exception.ErrInternalServer(err.Error())
 	}
 
+	log.Printf(user.Phone)
 	if _, err := db.Exec(ctx, "data",
 		user.ID,
 		user.Name,
@@ -65,7 +65,7 @@ func (repository *userRepository) CreateUser(c context.Context, user domain.User
 		user.Email,
 		user.Password,
 		user.Phone,
-		user.Role.ID,
+		user.RoleID,
 		user.CreatedAt,
 		user.UpdatedAt); err != nil {
 		return exception.ErrUnprocessableEntity(err.Error())
@@ -86,7 +86,7 @@ func (repository *userRepository) GetAllUser(c context.Context) ([]domain.User, 
 		FROM users
 		LEFT JOIN roles ON roles.id = users.role_id`
 
-	user, err := db.Query(ctx, query)
+	user, err := db.Query(context.Background(), query)
 	if err != nil {
 		return []domain.User{}, exception.ErrInternalServer(err.Error())
 	}
@@ -114,15 +114,14 @@ func (repository *userRepository) GetUserByID(c context.Context, userID string) 
 		LEFT JOIN roles ON roles.id = users.role_id
 		WHERE users.id = $1`
 
-	user, err := db.Query(ctx, query, userID)
+	user := db.QueryRow(ctx, query, userID)
+
+	var data domain.User
+	err := user.Scan(&data.ID, &data.Name, &data.Username, &data.Email, &data.Password, &data.Phone, &data.RoleID, &data.CreatedAt, &data.UpdatedAt, &data.RoleName)
 	if err != nil {
 		fmt.Printf("CollectRows error: %v", err)
 		return domain.User{}, exception.ErrInternalServer(err.Error())
 	}
-
-	defer user.Close()
-
-	data, err := pgx.CollectOneRow(user, pgx.RowToStructByPos[domain.User])
 
 	if data.ID == "" {
 		return domain.User{}, exception.ErrNotFound("user not found")
@@ -143,12 +142,16 @@ func (repository *userRepository) GetUsersByQuery(c context.Context, params stri
 	db := repository.Database(dbName)
 	defer db.Close(ctx)
 
-	query := fmt.Sprintf("SELECT * FROM users WHERE %s = $1", params)
+	query := fmt.Sprintf(`SELECT users.*, roles.name
+		FROM users
+		LEFT JOIN roles ON roles.id = users.role_id
+		WHERE %s = $1`,
+		params)
 
 	user := db.QueryRow(ctx, query, value)
 
 	var data domain.User
-	user.Scan(&data.ID, &data.Name, &data.Username, &data.Email, &data.Password, &data.Phone, &data.Role, &data.CreatedAt, &data.UpdatedAt)
+	user.Scan(&data.ID, &data.Name, &data.Username, &data.Email, &data.Password, &data.Phone, &data.RoleID, &data.CreatedAt, &data.UpdatedAt, &data.RoleName)
 
 	return data, nil
 }
@@ -166,7 +169,7 @@ func (repository *userRepository) UpdateUser(c context.Context, user domain.User
 		email = $3, 
 		password = $4, 
 		phone = $5, 
-		role = $6, 
+		role_id = $6, 
 		updated_at = $7
 		WHERE id = $8`
 
@@ -180,29 +183,10 @@ func (repository *userRepository) UpdateUser(c context.Context, user domain.User
 		user.Email,
 		user.Password,
 		user.Phone,
-		user.Role,
-		user.UpdatedAt); err != nil {
+		user.RoleID,
+		user.UpdatedAt,
+		user.ID); err != nil {
 		return exception.ErrUnprocessableEntity(err.Error())
-	}
-
-	return nil
-}
-
-func (repository *userRepository) UpdateUserPassword(c context.Context, user domain.User) error {
-	ctx, cancel := context.WithTimeout(c, 10*time.Second)
-	defer cancel()
-
-	db := repository.Database(dbName)
-	defer db.Close(ctx)
-
-	query := "UPDATE users SET password = $1 WHERE id = $2"
-
-	if _, err := db.Prepare(c, "data", query); err != nil {
-		return exception.ErrInternalServer(err.Error())
-	}
-
-	if _, err := db.Exec(c, "data", user.Password, user.ID); err != nil {
-		return exception.ErrInternalServer(err.Error())
 	}
 
 	return nil

@@ -9,7 +9,7 @@ import (
 )
 
 type UserClaimsData struct {
-	Id       string `json:"nik"`
+	ID       string `json:"nik"`
 	Username string `json:"name"`
 	RoleID   string `json:"role_id"`
 }
@@ -29,7 +29,7 @@ func GenerateJWT(issuer string, user UserClaimsData) (string, error) {
 	claims := &JWTClaims{
 		User: user,
 		StandardClaims: jwt.StandardClaims{
-			Issuer: issuer,
+			Issuer:    issuer,
 			ExpiresAt: time.Now().Add(time.Hour * time.Duration(session)).Unix(),
 		},
 	}
