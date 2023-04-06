@@ -34,7 +34,7 @@ func (controller *userController) NewUserRouter(app *fiber.App) {
 		})
 	})
 
-	user.Use(middleware.IsAuthenticated)
+	user.Use(middleware.IsAuthenticated, middleware.IsAdmin)
 	user.Get("/", controller.GetAllUsers)
 	user.Get("/:id", controller.GetUserbyID)
 	user.Post("/create", controller.CreateUser)

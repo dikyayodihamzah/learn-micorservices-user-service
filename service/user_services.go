@@ -101,9 +101,8 @@ func (service *userService) GetAllUser(c context.Context) ([]web.UserResponse, e
 	if err != nil {
 		return []web.UserResponse{}, err
 	}
-	// log.Println(users)
+
 	return helper.ToAllUserResponses(users), nil
-	// return users, nil
 }
 
 func (service *userService) GetUserByID(c context.Context, id string) (web.UserResponse, error) {
