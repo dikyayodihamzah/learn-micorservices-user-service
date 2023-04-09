@@ -1,6 +1,8 @@
 package helper
 
-import "regexp"
+import (
+	"regexp"
+)
 
 func IsNumeric(word string) bool {
 	for _, c := range word {

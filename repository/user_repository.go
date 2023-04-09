@@ -173,7 +173,7 @@ func (repository *userRepository) UpdateUser(c context.Context, user domain.User
 		updated_at = $7
 		WHERE id = $8`
 
-	if _, err := db.Prepare(c, "data", query); err != nil {
+	if _, err := db.Prepare(ctx, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
@@ -201,11 +201,11 @@ func (repository *userRepository) DeleteUser(c context.Context, user_id string) 
 
 	query := `DELETE FROM users WHERE id = $1`
 
-	if _, err := db.Prepare(c, "data", query); err != nil {
+	if _, err := db.Prepare(ctx, "data", query); err != nil {
 		return exception.ErrInternalServer(err.Error())
 	}
 
-	if _, err := db.Exec(c, "data", user_id); err != nil {
+	if _, err := db.Exec(ctx, "data", user_id); err != nil {
 		return exception.ErrUnprocessableEntity(err.Error())
 	}
 

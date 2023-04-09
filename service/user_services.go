@@ -91,7 +91,8 @@ func (service *userService) CreateUser(c context.Context, request web.CreateUser
 		return web.UserResponse{}, err
 	}
 
-	// KAFKA
+	// kafka
+	helper.ProduceToKafka(user, "POST.USER", helper.KafkaTopic)
 
 	return helper.ToUserResponse(user), nil
 }
@@ -169,7 +170,8 @@ func (service *userService) UpdateUser(c context.Context, id string, request web
 		return web.UserResponse{}, exception.ErrInternalServer(err.Error())
 	}
 
-	// KAFAK
+	// kafka
+	helper.ProduceToKafka(user, "PUT.USER", helper.KafkaTopic)
 
 	user, _ = service.UserRepository.GetUserByID(c, id)
 	return helper.ToUserResponse(user), nil
@@ -186,7 +188,8 @@ func (service *userService) DeleteUser(c context.Context, id string) error {
 		return err
 	}
 
-	// KAFKA
+	// kafka
+	helper.ProduceToKafka(user, "DELETE.USER", helper.KafkaTopic)
 
 	return nil
 }
