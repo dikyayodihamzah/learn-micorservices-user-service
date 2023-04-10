@@ -19,6 +19,8 @@ type UserRepository interface {
 	GetAllUser(c context.Context) ([]domain.User, error)
 	GetUserByID(c context.Context, userID string) (domain.User, error)
 	GetUsersByQuery(c context.Context, params string, value string) (domain.User, error)
+
+	//kafka
 	UpdateUser(c context.Context, user domain.User) error
 	DeleteUser(c context.Context, user_id string) error
 }
@@ -57,7 +59,6 @@ func (repository *userRepository) CreateUser(c context.Context, user domain.User
 		return exception.ErrInternalServer(err.Error())
 	}
 
-	log.Printf(user.Phone)
 	if _, err := db.Exec(ctx, "data",
 		user.ID,
 		user.Name,

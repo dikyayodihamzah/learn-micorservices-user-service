@@ -10,6 +10,8 @@ import (
 
 type RoleRepository interface {
 	GetRoleByID(c context.Context, role_id string) domain.Role
+
+	//kafka
 	Create(c context.Context, role domain.Role) error
 	Update(c context.Context, id string, role domain.Role) error
 	Delete(c context.Context, id string) error
